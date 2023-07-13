@@ -350,34 +350,49 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
     }
     
     /// use regex check all link ranges
-    fileprivate func parseTextAndExtractActiveElements(_ attrString: NSAttributedString) -> String {
-        var textString = attrString.string
-        var textLength = textString.utf16.count
-        var textRange = NSRange(location: 0, length: textLength)
-        
-        if enabledTypes.contains(.url) {
-            let tuple = ActiveBuilder.createURLElements(from: textString, range: textRange, maximumLength: urlMaximumLength)
-            let urlElements = tuple.0
-            let finalText = tuple.1
-            textString = finalText
-            textLength = textString.utf16.count
-            textRange = NSRange(location: 0, length: textLength)
-            activeElements[.url] = urlElements
-        }
-        
-        for type in enabledTypes where type != .url {
-            var filter: ((String) -> Bool)? = nil
-            if type == .mention {
-                filter = mentionFilterPredicate
-            } else if type == .hashtag {
-                filter = hashtagFilterPredicate
+     fileprivate func parseTextAndExtractActiveElements(_ attrString: NSAttributedString) -> String {
+            var textString = attrString.string
+            var textLength = textString.utf16.count
+            var textRange = NSRange(location: 0, length: textLength)
+
+            var addedElements = [ElementTuple]()
+            
+            if enabledTypes.contains(.url) {
+                let tuple = ActiveBuilder.createURLElements(from: textString, range: textRange, maximumLength: urlMaximumLength)
+                let urlElements = tuple.0
+                let finalText = tuple.1
+                textString = finalText
+                textLength = textString.utf16.count
+                textRange = NSRange(location: 0, length: textLength)
+                activeElements[.url] = urlElements
+                
+                addedElements.append(contentsOf: urlElements)
             }
-            let hashtagElements = ActiveBuilder.createElements(type: type, from: textString, range: textRange, filterPredicate: filter)
-            activeElements[type] = hashtagElements
+            
+            for type in enabledTypes where type != .url {
+                var filter: ((String) -> Bool)? = nil
+                if type == .mention {
+                    filter = mentionFilterPredicate
+                } else if type == .hashtag {
+                    filter = hashtagFilterPredicate
+                }
+                var hashtagElements = ActiveBuilder.createElements(type: type, from: textString, range: textRange, filterPredicate: filter)
+                
+                for (i, hashElement) in hashtagElements.enumerated() {
+                    if let _ = addedElements.firstIndex(where: { (element) -> Bool in
+                        let intersection = NSIntersectionRange(element.range, hashElement.range)
+                        return intersection.length != 0
+                    }) {
+                        hashtagElements.remove(at: i)
+                    }
+                }
+                
+                activeElements[type] = hashtagElements
+                addedElements.append(contentsOf: hashtagElements)
+            }
+
+            return textString
         }
-        
-        return textString
-    }
     
     
     /// add line break mode
