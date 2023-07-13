@@ -350,7 +350,7 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
     }
     
     /// use regex check all link ranges
-     fileprivate func parseTextAndExtractActiveElements(_ attrString: NSAttributedString) -> String {
+          fileprivate func parseTextAndExtractActiveElements(_ attrString: NSAttributedString) -> String {
             var textString = attrString.string
             var textLength = textString.utf16.count
             var textRange = NSRange(location: 0, length: textLength)
@@ -378,14 +378,15 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
                 }
                 var hashtagElements = ActiveBuilder.createElements(type: type, from: textString, range: textRange, filterPredicate: filter)
                 
-                for (i, hashElement) in hashtagElements.enumerated() {
+                hashtagElements.removeAll(where: { (hashElement) -> Bool in
                     if let _ = addedElements.firstIndex(where: { (element) -> Bool in
                         let intersection = NSIntersectionRange(element.range, hashElement.range)
                         return intersection.length != 0
                     }) {
-                        hashtagElements.remove(at: i)
+                        return true
                     }
-                }
+                    return false
+                })
                 
                 activeElements[type] = hashtagElements
                 addedElements.append(contentsOf: hashtagElements)
@@ -393,7 +394,6 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
 
             return textString
         }
-    
     
     /// add line break mode
     fileprivate func addLineBreak(_ attrString: NSAttributedString) -> NSMutableAttributedString {
