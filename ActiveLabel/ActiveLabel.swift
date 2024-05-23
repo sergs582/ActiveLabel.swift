@@ -163,16 +163,32 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
         updateTextStorage()
     }
     
-    open override func drawText(in rect: CGRect) {
+     open override func drawText(in rect: CGRect) {
         let range = NSRange(location: 0, length: textStorage.length)
         
         textContainer.size = rect.size
         let newOrigin = textOrigin(inRect: rect)
-        
+
+        validateLineHeight()
+
         layoutManager.drawBackground(forGlyphRange: range, at: newOrigin)
         layoutManager.drawGlyphs(forGlyphRange: range, at: newOrigin)
     }
-    
+
+    fileprivate func validateLineHeight() {
+        guard let currentStyle = textStorage.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle 
+        else { return }
+
+        let fontPointSize = self.font.pointSize
+        let expectedLineHeight = fontPointSize * 1.14
+
+        if currentStyle.minimumLineHeight != expectedLineHeight {
+            let mutableStyle = (currentStyle.mutableCopy() as? NSMutableParagraphStyle) ?? NSMutableParagraphStyle()
+            mutableStyle.minimumLineHeight = expectedLineHeight
+            let fullRange = NSRange(location: 0, length: textStorage.length)
+            textStorage.addAttribute(.paragraphStyle, value: mutableStyle, range: fullRange)
+        }
+    }
     
     // MARK: - customzation
     @discardableResult
