@@ -176,7 +176,8 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
     }
 
     fileprivate func validateLineHeight() {
-        guard let currentStyle = textStorage.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle 
+        guard textStorage.length > 0,
+              let currentStyle = textStorage.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle 
         else { return }
 
         let fontPointSize = self.font.pointSize
